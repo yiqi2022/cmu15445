@@ -48,7 +48,7 @@ auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
     for (auto node : more_k_) {
       if (node->is_evictable_) {
         *frame_id = node->fid_;
-        more_k_.remove(node);
+        more_k_.erase(node);
         node_store_.erase(*frame_id);
         curr_size_--;
         delete node;
@@ -82,21 +82,10 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id, AccessType access_type) {
   if (history_size == k_) {
     less_k_.remove(node);
   } else {
-    more_k_.remove(node);
+    more_k_.erase(node);
     node->history_.pop_front();
   }
-  bool done = false;
-  auto kth = node->history_.front();
-  for (auto it = more_k_.begin(); it != more_k_.end(); ++it) {
-    if ((*it)->history_.front() > kth) {
-      more_k_.emplace(it, node);
-      done = true;
-      break;
-    }
-  }
-  if (!done) {
-    more_k_.emplace_back(node);
-  }
+  more_k_.insert(node);
 }
 
 void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
@@ -138,8 +127,9 @@ void LRUKReplacer::Remove(frame_id_t frame_id) {
   if (node->history_.size() < k_) {
     less_k_.remove(node);
   } else {
-    more_k_.remove(node);
+    more_k_.erase(node);
   }
+  curr_size_--;
   delete node;
   node_store_.erase(frame_id);
 }

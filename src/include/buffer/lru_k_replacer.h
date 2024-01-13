@@ -16,6 +16,7 @@
 #include <limits>
 #include <list>
 #include <mutex>  // NOLINT
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -24,7 +25,7 @@
 
 namespace bustub {
 
-enum class AccessType {Unknown = 0, Get, Scan };
+enum class AccessType { Unknown = 0, Get, Scan };
 
 class LRUKNode {
  private:
@@ -33,6 +34,14 @@ class LRUKNode {
   frame_id_t fid_;
   bool is_evictable_{false};
   friend class LRUKReplacer;
+  friend class MyCmp;
+};
+
+class MyCmp {
+ public:
+  auto operator()(const LRUKNode *n1, const LRUKNode *n2) const -> bool {
+    return n1->history_.front() < n2->history_.front();
+  }
 };
 
 /**
@@ -150,8 +159,8 @@ class LRUKReplacer {
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
   std::unordered_map<frame_id_t, LRUKNode *> node_store_;
-  std::list<LRUKNode *> more_k_;  // 存访问次数大于等于k的page：按the timestamp of kth previous access从小到大的顺序，先驱逐前面的
-  std::list<LRUKNode *> less_k_;  // 存访问次数小于k的page：按the timestamp of the most recent
+  std::set<LRUKNode *, MyCmp> more_k_;
+  std::list<LRUKNode *> less_k_;
   size_t current_timestamp_{0};
   size_t curr_size_{0};
   size_t replacer_size_;
