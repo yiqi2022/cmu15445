@@ -191,7 +191,7 @@ class BufferPoolManager {
   /** List of free frames that don't have any pages on them. */
   std::list<frame_id_t> free_list_;
   /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
-  std::mutex latch_;
+  std::mutex mu_;
 
   /**
    * @brief Allocate a page on disk. Caller should acquire the latch before calling this function.
@@ -207,6 +207,37 @@ class BufferPoolManager {
     // This is a no-nop right now without a more complex data structure to track deallocated pages
   }
 
-  // TODO(student): You may add additional private members and helper functions
+  void Pinpage(page_id_t page_id) {
+    auto frame_id = page_table_[page_id];
+    replacer_->SetEvictable(frame_id, false);
+    (pages_ + frame_id)->pin_count_++;
+    replacer_->RecordAccess(frame_id);
+  }
+
+  auto InitNewPage(page_id_t page_id, frame_id_t frame_id) -> Page * {
+    auto page = pages_ + frame_id;
+    page_table_[page_id] = frame_id;
+    page->ResetMemory();
+    page->page_id_ = page_id;
+    page->pin_count_ = 0;
+    page->is_dirty_ = false;
+    return page;
+  }
+
+  auto GetFreeFrame() -> frame_id_t {
+    frame_id_t frame_id;
+    if (!free_list_.empty()) {  // 从freelist找空frame用于new page
+      frame_id = free_list_.back();
+      free_list_.pop_back();
+    } else {  // 从已分配的pages中找可以驱逐的用于new page
+      replacer_->Evict(&frame_id);
+      auto page = pages_ + frame_id;
+      if (page->is_dirty_) {
+        FlushPage(page->page_id_);  // 如果是dirty page，在init前需要先将page写入磁盘
+      }
+      page_table_.erase(page->page_id_);
+    }
+    return frame_id;
+  }
 };
 }  // namespace bustub
