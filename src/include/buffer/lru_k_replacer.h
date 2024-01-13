@@ -24,7 +24,7 @@
 
 namespace bustub {
 
-enum class AccessType { Unknown = 0, Lookup, Scan, Index };
+enum class AccessType {Unknown = 0, Get, Scan };
 
 class LRUKNode {
  private:
@@ -150,8 +150,7 @@ class LRUKReplacer {
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
   std::unordered_map<frame_id_t, LRUKNode *> node_store_;
-  std::list<LRUKNode *>
-      more_k_;  // 存访问次数大于等于k的page：按the timestamp of kth previous access从小到大的顺序，先驱逐前面的
+  std::list<LRUKNode *> more_k_;  // 存访问次数大于等于k的page：按the timestamp of kth previous access从小到大的顺序，先驱逐前面的
   std::list<LRUKNode *> less_k_;  // 存访问次数小于k的page：按the timestamp of the most recent
   size_t current_timestamp_{0};
   size_t curr_size_{0};
